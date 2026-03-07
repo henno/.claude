@@ -1,0 +1,74 @@
+# ~/.claude .gitignore
+# Track: CLAUDE.md, settings.json, commands/, skills/, agents/, hooks/, custom scripts
+# Ignore: everything else (generated, ephemeral, sensitive, machine-specific)
+
+# === OS metadata ===
+.DS_Store
+Thumbs.db
+
+# === Internal state & credentials ===
+.claude.json
+.claude.json.backup.*
+playwright-storage-state.json
+
+# === Local-only settings ===
+.claude/
+*.local.json
+
+# === Session & history data ===
+history.jsonl
+sessions/
+session-env/
+shell-snapshots/
+paste-cache/
+image-cache/
+
+# === Debug & diagnostic logs ===
+debug/
+
+# === File change history snapshots ===
+file-history/
+
+# === Per-project session data & auto-memory ===
+projects/
+
+# === Auto-generated plans, tasks, todos ===
+plans/
+tasks/
+todos/
+
+# === Config backups ===
+backups/
+
+# === Analytics & feature flags ===
+telemetry/
+statsig/
+stats-cache.json
+
+# === Plugins (reinstallable) ===
+plugins/
+
+# === IDE integration locks ===
+ide/
+
+# === General cache ===
+cache/
+
+# === Runtime state files ===
+terminal_title
+terminal_title_task
+
+# === Skill-generated runtime data ===
+skills/*/data/
+skills/**/browser_state/
+skills/**/cache/
+skills/**/*.log
+
+# === Temporary files ===
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*.swo
+*~
