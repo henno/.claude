@@ -64,6 +64,13 @@ skills/**/browser_state/
 skills/**/cache/
 skills/**/*.log
 
+# === GSD (managed by /gsd:update) ===
+get-shit-done/
+commands/gsd/
+agents/gsd-*.md
+hooks/gsd-*.js
+gsd-file-manifest.json
+
 # === Temporary files ===
 *.tmp
 *.temp

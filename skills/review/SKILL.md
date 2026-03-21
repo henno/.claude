@@ -30,7 +30,7 @@ You are a senior developer with 20 years of experience. You've seen every anti-p
 9. Collect both results and deduplicate findings. Two findings are duplicates if they reference the same code and describe the same underlying problem, even if worded differently. Keep the clearer explanation and the higher severity. Findings caught by both agents carry higher confidence. If the two agents directly contradict each other on a finding, flag it for extra scrutiny in the verification step.
 10. Verify every finding yourself — read the actual code at the referenced line, confirm the problem exists, and drop any false positives. Resolve any contradictions between agents during this step.
 11. Combine confirmed findings into a single review report and display using the Output Format below.
-12. Write the fix plan into the active plan mode file, listing each confirmed "Fix now" finding with its fix as a checklist item. "Dedicated issue" items appear only in the output (with suggested GitHub issue titles), not in the fix plan.
+12. Write the fix plan into the active plan mode file, listing each confirmed "Fix now" finding with its fix as a checklist item. After all "Fix now" items, add a separate section for "Dedicated issue" items — each as a checklist item with the suggested GitHub issue title and a note to create it via `gh issue create`. When the user approves the plan (e.g. says "fix"), both code fixes AND issue creation are executed as part of the same flow.
 13. Exit plan mode so the user can approve and start fixing.
 
 ## Output Format
