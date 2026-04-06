@@ -1,6 +1,6 @@
 ---
 name: korras
-description: Deploy workflow - commit, squash-merge feature branch to master (if applicable), push, and deploy to production. Use when user says "korras". Reads deploy command from project CLAUDE.md.
+description: Finalize and deploy work. Supports feature branches and default-branch latest-commit deploys, prefers project deploy scripts, creates missing deploy scripts from a user-provided command, and uses production by default when the user says "korras".
 ---
 
 # Korras (Deploy)
@@ -9,56 +9,101 @@ Automated deploy workflow. "Korras" is Estonian for "done" / "in order".
 
 ## Process
 
-### 1. Assess current state
+### 1. Resolve target environment
+
+- If the user says only `korras`, treat it as a production deploy.
+- If the user says `korras <environment>`, use that environment.
+- Prefer project-local deploy scripts:
+  - production: `scripts/deploy` and then legacy `scripts/deploy-production`
+  - other environments: `scripts/deploy-<environment>`
+- If no matching deploy script exists, ask the user for the exact deploy command and generate the matching project-local deploy script with:
+
+```sh
+node "$CLAUDE_SKILL_DIR/scripts/create-deploy-script.js" <environment> "<command>"
+```
+
+### 2. Assess current state
 
 Run in parallel:
 - `git branch --show-current`
 - `git status --short`
 - `git log --oneline -5`
+- `bash "$CLAUDE_SKILL_DIR/scripts/get-default-branch.sh"`
+- `bash "$CLAUDE_SKILL_DIR/scripts/parse-branch.sh"`
 
-### 2. Determine deploy command
+### 3. Use the helper flow script for deterministic steps
 
-Search the project's `CLAUDE.md` for a deploy command. Look for patterns like:
-- `ssh ... && ./topograph restart` or similar remote deploy commands
-- A section mentioning "korras" or "deploy" instructions
-- A `DEPLOY_CMD` or deploy script reference
-
-If no deploy command is found, skip the deploy step (do not ask).
-
-### 3. Execute as one command chain
-
-**If on a feature branch** — extract `BRANCH` and `NUMBER` from the branch name (format: `GH-{number}-{desc}`), then run everything as a single `&&` chain:
+The main entrypoint is:
 
 ```sh
-git add -A && git commit -m "<message>" && git checkout main && git pull --ff-only && git merge --squash "$BRANCH" && git commit -m "$(gh issue view {number} --json title -q .title)" && git push && gh issue close {number} && git branch -D "$BRANCH"
+bash "$CLAUDE_SKILL_DIR/scripts/korras-flow.sh" <environment>
 ```
 
-If the project has a deploy command, append it:
+This script handles the fast path:
+- default-branch detection,
+- historical and current branch-name parsing,
+- deploy-script discovery,
+- rebase onto the latest default branch,
+- squash merge,
+- push,
+- deploy,
+- GitHub issue close when applicable,
+- branch deletion.
+
+It stops immediately when a problem needs judgment.
+
+### 4. If the flow script stops, handle the problem and rerun it
+
+Common blocked states:
+- `REASON=dirty_worktree`: review the changes, commit them if appropriate, then rerun the same command.
+- `REASON=rebase_conflict`: resolve conflicts carefully, run `git rebase --continue`, and rerun the same command.
+- `REASON=on_default_branch`: use the default-branch review/deploy path below.
+- `STATUS=missing`: ask the user for the exact deploy command, create the missing deploy script, then rerun the same command.
+- `REASON=detached_head`, `REASON=default_branch_unknown`, or `REASON=missing_origin_remote`: stop and explain the repository state clearly before proceeding.
+- `REASON=fetch_failed`: inspect the remote failure and retry only after the fetch problem is understood.
+
+When resolving conflicts:
+- read the conflicted file, conflict markers, and relevant recent commits on both sides,
+- decide case by case which resolution is best in context,
+- do not blindly prefer upstream or branch changes,
+- combine both sides when they are complementary,
+- only ask the user if the conflict is genuinely ambiguous or high-risk.
+
+### 5. Default-branch latest-commit review/deploy path
+
+Sometimes work is already on the default branch because of manual intervention.
+In that case:
+- review the latest relevant commit before deploying,
+- do not make new implementation changes on the default branch,
+- if deployment should proceed, run:
+
 ```sh
-... && git branch -D "$BRANCH" && <deploy-command>
+KORRAS_ALLOW_DEFAULT_BRANCH=1 bash "$CLAUDE_SKILL_DIR/scripts/korras-flow.sh" <environment>
 ```
 
-If there are no uncommitted changes, omit the `git add -A && git commit` prefix.
+This path deploys the latest default-branch state but does not close issues or delete branches.
 
-If `git push` fails, local main is ahead of origin — fix the push issue and re-run `git push` alone. Do not reset main.
+### 6. Commit message handling
 
-**If already on main** — commit any uncommitted changes, then:
+- If the worktree is dirty before running `korras`, create a normal task commit first following the repository's commit workflow.
+- The helper flow script finalizes the default-branch squash commit automatically.
+- For GitHub issue branches like `gh-123-...`, it uses the issue title as the squash commit message.
+- For historical or non-GitHub branch names, it falls back to the current commit subject unless you provide `KORRAS_FINAL_COMMIT_MESSAGE`.
 
-```sh
-git add -A && git commit -m "<message>" && git push
-```
+### 7. Logging and wrap-up
 
-Append the deploy command if one exists.
+- Log the finalization and deployment work before returning control to the user.
+- After a successful GitHub release flow, run `gh issue list --state open` and recommend what to pick next, giving preference to bugs and blockers.
 
-### 4. After completion
-
-Run `gh issue list --state open` and display the open issues. Recommend which to pick next, giving preference to bugs over features and to issues that unblock others.
-
-### 5. Important rules
+### 8. Important rules
 
 - NEVER force push
-- NEVER skip pre-commit hooks (--no-verify)
+- NEVER skip pre-commit hooks (`--no-verify`)
+- Always rebase the feature branch onto the latest default branch before the final squash merge
 - Always use squash merge for feature branches (`git merge --squash`), never regular merge
 - Use `-D` to delete the feature branch (squash merge is not a real merge commit, so `-d` would refuse)
+- Support historical branch names as well as the current issue-first naming convention
+- Treat `korras` with no environment as production by default
+- Deploy before closing the issue and deleting the branch
 - If any step in the chain fails, stop and diagnose before retrying from that step
-- If the deploy command fails, report the error and stop — do not retry blindly
+- If the deploy command fails, report the error and stop; do not retry blindly

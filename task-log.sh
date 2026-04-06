@@ -29,3 +29,6 @@ if [ -n "$issue" ]; then
 else
   echo "[$(date '+%Y-%m-%d %H:%M') $(pwd | sed "s|$HOME|~|")] $action $description$suffix" >> ~/tasks.md
 fi
+
+# Sync to Kristella (OpenClaw VM)
+scp -q ~/tasks.md root@157.180.21.22:/home/openclaw/.openclaw/workspace/tasks.md 2>/dev/null &
