@@ -43,7 +43,8 @@ If the current branch is the default branch and the task requires file changes:
 2. if no issue exists, tell the user implementation must start from an issue first,
 3. if a new issue is needed, propose issue content and require user approval before creating it,
 4. prefer `gh` for GitHub issue creation, inspection, and closure when available,
-5. create a new branch only after the issue exists.
+5. if no issue automation is available, draft the issue text and stop pending manual issue creation,
+6. create a new branch only after the issue exists.
 
 Never commit implementation changes on the default branch.
 
@@ -71,14 +72,11 @@ Do not stop at the first working version.
 
 After making changes:
 - run the smallest relevant automated checks available for the touched code,
-- review the changed code for correctness, security, edge cases, regressions, and maintainability,
-- always perform code review using specialized subagents,
-- assign enough specialized subagents so that all of the following areas are explicitly covered in the review prompts or responsibilities: functional correctness, security, edge cases, authorization and authentication, input validation, error handling, data corruption risk, concurrency and race conditions, regression risk, performance, and maintainability,
+- perform code review before commit,
+- use `skills/review/SKILL.md` as the source of truth for the detailed review workflow, required coverage areas, fallback behavior, and review report format,
 - use the main agent to validate subagent findings against the changed code and context, discard false positives and duplicates, and fix all important validated issues,
 - if an important validated issue is found, fix it and re-run the relevant checks,
 - ensure the final state is coherent, non-partial, and ready to keep in project history.
-
-Scale the number and specialization of subagents to the risk and scope of the change.
 
 ## Commits
 
