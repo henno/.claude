@@ -28,6 +28,9 @@ function listScriptEnvironments(root) {
 
   const envs = new Set()
   for (const entry of fs.readdirSync(scriptsDir)) {
+    const entryPath = path.join(scriptsDir, entry)
+    if (!isRunnableScript(entryPath)) continue
+
     if (entry === 'deploy') {
       envs.add('production')
       continue
@@ -41,6 +44,15 @@ function listScriptEnvironments(root) {
     }
   }
   return [...envs].sort()
+}
+
+function isRunnableScript(filePath) {
+  try {
+    const stat = fs.statSync(filePath)
+    return stat.isFile() && (stat.mode & 0o111) !== 0
+  } catch {
+    return false
+  }
 }
 
 function output(lines) {
@@ -60,9 +72,11 @@ if (!isValidEnv(env)) {
   process.exit(23)
 }
 
+const invalidCandidates = []
+
 for (const candidate of scriptCandidates(env)) {
   const absolutePath = path.join(root, candidate.replace(/^\.\//, ''))
-  if (fs.existsSync(absolutePath)) {
+  if (isRunnableScript(absolutePath)) {
     output([
       'STATUS=ok',
       'MODE=script',
@@ -73,6 +87,21 @@ for (const candidate of scriptCandidates(env)) {
     ])
     process.exit(0)
   }
+
+  if (fs.existsSync(absolutePath)) {
+    invalidCandidates.push(candidate)
+  }
+}
+
+if (invalidCandidates.length > 0) {
+  output([
+    'STATUS=blocked',
+    'REASON=invalid_deploy_target',
+    `ENVIRONMENT=${env}`,
+    `REPO_ROOT=${root}`,
+    `INVALID_TARGETS=${invalidCandidates.join(',')}`,
+  ])
+  process.exit(24)
 }
 
 const availableEnvs = new Set(listScriptEnvironments(root))

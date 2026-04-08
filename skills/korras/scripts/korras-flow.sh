@@ -39,10 +39,11 @@ fi
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
-DEFAULT_BRANCH=$($SCRIPT_DIR/get-default-branch.sh 2>/dev/null) || {
-  block 'default_branch_unknown'
+DEFAULT_BRANCH_OUTPUT=$($SCRIPT_DIR/get-default-branch.sh 2>&1) || {
+  block 'default_branch_unknown' "DETAIL=$DEFAULT_BRANCH_OUTPUT"
   exit 12
 }
+DEFAULT_BRANCH=$DEFAULT_BRANCH_OUTPUT
 CURRENT_BRANCH=$(git branch --show-current)
 
 if [ -z "$CURRENT_BRANCH" ]; then

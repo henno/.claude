@@ -46,12 +46,17 @@ const filePath = path.join(root, relativePath)
 
 fs.mkdirSync(path.dirname(filePath), { recursive: true })
 
-if (fs.existsSync(filePath)) {
-  process.stderr.write(`Deploy script already exists: ${filePath}\n`)
-  process.exit(2)
+try {
+  fs.writeFileSync(filePath, renderScript(command), { mode: 0o755, flag: 'wx' })
+} catch (error) {
+  if (error && error.code === 'EEXIST') {
+    process.stderr.write(`Deploy script already exists: ${filePath}\n`)
+    process.exit(2)
+  }
+
+  throw error
 }
 
-fs.writeFileSync(filePath, renderScript(command), { mode: 0o755 })
 fs.chmodSync(filePath, 0o755)
 
 process.stdout.write(`SCRIPT_PATH=${filePath}\n`)

@@ -52,15 +52,18 @@ This script handles the fast path:
 
 It stops immediately when a problem needs judgment.
 
-### 4. If the flow script stops, handle the problem and rerun it
+### 4. If the flow script stops, handle the problem deliberately
 
 Common blocked states:
 - `REASON=dirty_worktree`: review the changes, commit them if appropriate, then rerun the same command.
 - `REASON=rebase_conflict`: resolve conflicts carefully, run `git rebase --continue`, and rerun the same command.
 - `REASON=on_default_branch`: use the default-branch review/deploy path below.
 - `STATUS=missing`: ask the user for the exact deploy command, create the missing deploy script, then rerun the same command.
+- `REASON=invalid_environment`: correct the environment name and rerun the same command.
+- `REASON=invalid_deploy_target`: fix or replace the invalid deploy script, then rerun the same command.
 - `REASON=detached_head`, `REASON=default_branch_unknown`, or `REASON=missing_origin_remote`: stop and explain the repository state clearly before proceeding.
 - `REASON=fetch_failed`: inspect the remote failure and retry only after the fetch problem is understood.
+- For failures after the script has already switched to the default branch, inspect the current repository state first and choose the next recovery step explicitly instead of blindly rerunning.
 
 When resolving conflicts:
 - read the conflicted file, conflict markers, and relevant recent commits on both sides,
@@ -73,7 +76,7 @@ When resolving conflicts:
 
 Sometimes work is already on the default branch because of manual intervention.
 In that case:
-- review the latest relevant commit before deploying,
+- review the latest relevant commit before deploying. This is a manual gate; the helper script does not enforce it for you,
 - do not make new implementation changes on the default branch,
 - if deployment should proceed, run:
 
@@ -86,7 +89,7 @@ This path deploys the latest default-branch state but does not close issues or d
 ### 6. Commit message handling
 
 - If the worktree is dirty before running `korras`, create a normal task commit first following the repository's commit workflow.
-- The helper flow script finalizes the default-branch squash commit automatically.
+- In feature-branch mode, the helper flow script creates the squash-merge commit automatically.
 - For GitHub issue branches like `gh-123-...`, it uses the issue title as the squash commit message.
 - For historical or non-GitHub branch names, it falls back to the current commit subject unless you provide `KORRAS_FINAL_COMMIT_MESSAGE`.
 
