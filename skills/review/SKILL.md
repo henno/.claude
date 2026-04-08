@@ -58,16 +58,27 @@ You are a senior developer with 20 years of experience. You've seen every anti-p
    - performance
    - maintainability
 10. Launch specialized subagent review with the environment's available subagent mechanism.
-   - Prefer specialized subagent types when the environment provides them.
-   - If only a general-purpose subagent is available, create specialized reviewer assignments in the prompts and split coverage deliberately across them.
-   - Always launch at least 2 reviewers in parallel, and scale up when the change is broad or risky.
-   - Across the parallel reviewers, explicitly assign all required areas from step 8.
-   - Give each reviewer the full diff, enough file context, the issue context, and the persona above.
-   - If one reviewer fails, continue with the others and note reduced confidence.
-   - If the environment exposes no working subagent mechanism, do a single-pass review yourself and state clearly that confidence is reduced because subagent review was unavailable.
-   - Example reviewer split:
-     - Reviewer 1: functional correctness, security, authorization and authentication, input validation, error handling, regression risk
-     - Reviewer 2: edge cases, data corruption risk, concurrency and race conditions, performance, maintainability
+    - Prefer specialized subagent types when the environment provides them.
+    - If only a general-purpose subagent is available, create one deliberately specialized reviewer prompt per review area.
+    - Launch one parallel reviewer per required area from step 9 whenever the subagent mechanism can support it.
+    - Each reviewer must focus on exactly one area and must not bundle multiple areas into a single reviewer assignment.
+    - Across the parallel reviewers, explicitly assign all required areas from step 9.
+    - Give each reviewer the full diff, enough file context, the issue context, and the persona above.
+    - If one reviewer fails, continue with the others and note reduced confidence.
+    - If the environment exposes no working subagent mechanism, do a single-pass review yourself and state clearly that confidence is reduced because subagent review was unavailable.
+    - If the environment cannot support one reviewer per area, use as many parallel reviewers as it can support, keep each reviewer focused on exactly one area, and then cover any remaining uncovered areas yourself while stating clearly that full per-area subagent coverage was not available.
+    - Example reviewer split:
+      - Reviewer 1: functional correctness
+      - Reviewer 2: security
+      - Reviewer 3: edge cases
+      - Reviewer 4: authorization and authentication
+      - Reviewer 5: input validation
+      - Reviewer 6: error handling
+      - Reviewer 7: data corruption risk
+      - Reviewer 8: concurrency and race conditions
+      - Reviewer 9: regression risk
+      - Reviewer 10: performance
+      - Reviewer 11: maintainability
 11. Validate every finding yourself.
     - Deduplicate overlapping findings.
     - Resolve contradictions between reviewers.

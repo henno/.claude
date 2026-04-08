@@ -74,6 +74,7 @@ After making changes:
 - run the smallest relevant automated checks available for the touched code,
 - perform code review before commit,
 - use `skills/review/SKILL.md` as the source of truth for the detailed review workflow, required coverage areas, fallback behavior, and review report format,
+- require each review subagent to focus on exactly one review area,
 - use the main agent to validate subagent findings against the changed code and context, discard false positives and duplicates, and fix all important validated issues,
 - if an important validated issue is found, fix it and re-run the relevant checks,
 - ensure the final state is coherent, non-partial, and ready to keep in project history.
